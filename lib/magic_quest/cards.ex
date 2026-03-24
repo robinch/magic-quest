@@ -3,7 +3,7 @@ defmodule MagicQuest.Cards do
   alias MagicQuest.Repo
   alias MagicQuest.Cards.Card
 
-  def autocomplete(query, limit \\ 8) when is_binary(query) do
+  def autocomplete(query, limit \\ 20) when is_binary(query) do
     if String.length(query) < 2 do
       []
     else
