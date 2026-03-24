@@ -1,9 +1,9 @@
 defmodule MagicQuest.Alphaspel do
   @base_url "https://alphaspel.se"
-  @search_path "/1978-mtg-loskort/"
+  @search_path "/947-kortspel/search/"
 
   def search(card_name) when is_binary(card_name) do
-    with {:ok, html} <- fetch_page(@search_path, q: card_name) do
+    with {:ok, html} <- fetch_page(@search_path, query: card_name) do
       results = parse_results(html)
       total_pages = parse_pagination(html)
 
@@ -13,7 +13,7 @@ defmodule MagicQuest.Alphaspel do
           Enum.flat_map(2..total_pages//1, fn page ->
             Process.sleep(2_000)
 
-            case fetch_page(@search_path, q: card_name, page: page) do
+            case fetch_page(@search_path, query: card_name, page: page) do
               {:ok, page_html} -> parse_results(page_html)
               {:error, _} -> []
             end
@@ -43,15 +43,14 @@ defmodule MagicQuest.Alphaspel do
     {:ok, doc} = Floki.parse_document(html)
 
     doc
-    |> Floki.find("a[href*='magic-loskort']")
-    |> Enum.map(&parse_card_element/1)
+    |> Floki.find("div.product")
+    |> Enum.map(&parse_product/1)
     |> Enum.reject(&is_nil/1)
   end
 
   def parse_pagination(html) when is_binary(html) do
     {:ok, doc} = Floki.parse_document(html)
 
-    # Look for pagination links — the last numbered page link
     page_links =
       doc
       |> Floki.find("a[href*='page=']")
@@ -70,20 +69,40 @@ defmodule MagicQuest.Alphaspel do
     end
   end
 
-  defp parse_card_element(element) do
-    text = Floki.text(element) |> String.trim()
-    href = Floki.attribute(element, "href") |> List.first("")
+  defp parse_product(product_div) do
+    # Extract link and name
+    link = Floki.find(product_div, "a") |> List.first()
+    if is_nil(link), do: throw(:skip)
 
-    # Extract image URL
-    image_url =
-      element
-      |> Floki.find("img")
-      |> Floki.attribute("src")
-      |> List.first()
+    href = Floki.attribute(link, "href") |> List.first("")
+    product_name_text = Floki.find(product_div, ".product-name") |> Floki.text() |> String.trim()
 
-    # Parse the product name and extract card details
-    {name, set_name, condition} = parse_product_name(text)
-    {price_kr, stock, in_stock} = parse_price_and_stock(text)
+    # Extract price
+    price_text = Floki.find(product_div, ".price") |> Floki.text() |> String.trim()
+
+    price_kr =
+      case Regex.run(~r/(\d+)\s*kr/, price_text) do
+        [_, price] -> String.to_integer(price)
+        nil -> nil
+      end
+
+    # Extract stock
+    stock_text = Floki.find(product_div, ".stock") |> Floki.text() |> String.trim()
+
+    {stock, in_stock} =
+      cond do
+        match = Regex.run(~r/(\d+)\s*i butiken/, stock_text) ->
+          {String.to_integer(Enum.at(match, 1)), true}
+
+        String.contains?(stock_text, "Slutsåld") ->
+          {0, false}
+
+        true ->
+          {0, false}
+      end
+
+    # Parse name, set, condition
+    {name, set_name, condition} = parse_product_name(product_name_text)
 
     if name != "" do
       %{
@@ -93,14 +112,14 @@ defmodule MagicQuest.Alphaspel do
         stock: stock,
         in_stock: in_stock,
         condition: condition,
-        url: @base_url <> href,
-        image_url: if(image_url, do: @base_url <> image_url)
+        url: @base_url <> href
       }
     end
+  catch
+    :skip -> nil
   end
 
   defp parse_product_name(text) do
-    # Format: "Magic löskort: Set Name: Card Name (Begagnad)"
     condition =
       cond do
         String.contains?(text, "(Begagnad)") and String.contains?(text, "(Foil)") ->
@@ -121,38 +140,23 @@ defmodule MagicQuest.Alphaspel do
       |> String.replace(~r/\(Begagnad\)|\(Foil\)/, "")
       |> String.trim()
 
-    case String.split(clean_text, ":", parts: 3) do
-      [_prefix, set_name, card_name] ->
+    # Format: "Magic löskort: Set Name: Card Name"
+    # Strip "Magic löskort: " prefix first, then split set from card on last ": "
+    stripped =
+      clean_text
+      |> String.replace(~r/^Magic löskort:\s*/i, "")
+      |> String.trim()
+
+    # Split on last ": " to separate "Set Name" from "Card Name"
+    case String.split(stripped, ": ") do
+      parts when length(parts) >= 2 ->
+        card_name = List.last(parts)
+        set_name = parts |> Enum.drop(-1) |> Enum.join(": ")
         {String.trim(card_name), String.trim(set_name), condition}
 
-      [_prefix, card_name] ->
-        {String.trim(card_name), nil, condition}
-
-      _ ->
-        {clean_text, nil, condition}
+      [only] ->
+        {String.trim(only), nil, condition}
     end
-  end
-
-  defp parse_price_and_stock(text) do
-    price_kr =
-      case Regex.run(~r/(\d+)\s*kr/, text) do
-        [_, price] -> String.to_integer(price)
-        nil -> nil
-      end
-
-    {stock, in_stock} =
-      cond do
-        match = Regex.run(~r/(\d+)\s*i butiken/, text) ->
-          {String.to_integer(Enum.at(match, 1)), true}
-
-        String.contains?(text, "Slutsåld") ->
-          {0, false}
-
-        true ->
-          {0, false}
-      end
-
-    {price_kr, stock, in_stock}
   end
 
   defp client do
