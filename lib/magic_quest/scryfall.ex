@@ -35,18 +35,18 @@ defmodule MagicQuest.Scryfall do
   end
 
   defp client do
-    Req.new(
+    opts = [
       base_url: @base_url,
       headers: [{"user-agent", "MagicQuest/1.0 (personal wishlist tracker)"}]
-    )
-    |> maybe_attach_test_plug()
-  end
+    ]
 
-  defp maybe_attach_test_plug(req) do
-    if plug = Application.get_env(:magic_quest, :scryfall_plug) do
-      Req.Request.put_adapter(req, {Req.Test, plug})
-    else
-      req
-    end
+    opts =
+      if plug = Application.get_env(:magic_quest, :scryfall_plug) do
+        Keyword.put(opts, :plug, plug)
+      else
+        opts
+      end
+
+    Req.new(opts)
   end
 end
