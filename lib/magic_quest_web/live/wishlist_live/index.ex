@@ -22,6 +22,7 @@ defmodule MagicQuestWeb.WishlistLive.Index do
      |> assign(:suggestions, [])
      |> assign(:search_query, "")
      |> assign(:expanded_card_id, nil)
+     |> assign(:focused_card, nil)
      |> assign(:page_title, "My Wishlist")}
   end
 
@@ -135,6 +136,17 @@ defmodule MagicQuestWeb.WishlistLive.Index do
       if socket.assigns.expanded_card_id == id, do: nil, else: id
 
     {:noreply, assign(socket, :expanded_card_id, expanded)}
+  end
+
+  @impl true
+  def handle_event("show_image", %{"id" => id}, socket) do
+    card = Enum.find(socket.assigns.cards, &(&1.id == String.to_integer(id)))
+    {:noreply, assign(socket, :focused_card, card)}
+  end
+
+  @impl true
+  def handle_event("close_image", _params, socket) do
+    {:noreply, assign(socket, :focused_card, nil)}
   end
 
   @impl true

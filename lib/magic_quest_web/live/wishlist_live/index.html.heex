@@ -48,11 +48,11 @@
   <%!-- Card Grid --%>
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     <div :for={card <- @cards} class="card bg-base-100 shadow-md">
-      <figure :if={card.image_url} class="px-4 pt-4">
+      <figure :if={card.image_url} class="px-4 pt-4 cursor-pointer" phx-click="show_image" phx-value-id={card.id}>
         <img
           src={card.image_url}
           alt={card.card_name}
-          class="rounded-xl max-h-64 object-contain"
+          class="rounded-xl max-h-64 object-contain hover:opacity-80 transition-opacity"
         />
       </figure>
       <div class="card-body">
@@ -142,4 +142,19 @@
       </div>
     </div>
   </div>
+
+  <%!-- Image Modal --%>
+  <dialog :if={@focused_card} id="image-modal" class="modal modal-open" phx-click-away="close_image">
+    <div class="modal-box max-w-lg p-2 bg-transparent shadow-none">
+      <img
+        src={@focused_card.image_url}
+        alt={@focused_card.card_name}
+        class="rounded-2xl w-full"
+      />
+      <p class="text-center mt-2 font-semibold text-base-content">{@focused_card.card_name}</p>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button phx-click="close_image">close</button>
+    </form>
+  </dialog>
 </div>
