@@ -2,6 +2,7 @@ defmodule MagicQuestWeb.WishlistLive.Index do
   use MagicQuestWeb, :live_view
 
   alias MagicQuest.Wishlists
+  alias MagicQuest.Cards
   alias MagicQuest.Scryfall
   alias MagicQuest.Workers.SearchCardWorker
 
@@ -27,14 +28,9 @@ defmodule MagicQuestWeb.WishlistLive.Index do
   @impl true
   def handle_event("search_cards", %{"value" => query}, socket) do
     suggestions =
-      if String.length(query) >= 2 do
-        case Scryfall.autocomplete(query) do
-          {:ok, names} -> Enum.take(names, 8)
-          {:error, _} -> []
-        end
-      else
-        []
-      end
+      query
+      |> Cards.autocomplete(8)
+      |> Enum.map(& &1.name)
 
     {:noreply, assign(socket, suggestions: suggestions, search_query: query)}
   end
