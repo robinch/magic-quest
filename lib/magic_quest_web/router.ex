@@ -60,6 +60,10 @@ defmodule MagicQuestWeb.Router do
     live_session :authenticated,
       on_mount: [{MagicQuestWeb.LiveUserAuth, :ensure_authenticated}] do
       live "/wishlist", WishlistLive.Index, :index
+      live "/decks", DeckLive.Index, :index
+      live "/decks/new", DeckLive.Index, :new
+      live "/decks/:id/edit", DeckLive.Index, :edit
+      live "/decks/:id", DeckLive.Show, :show
     end
 
     get "/users/settings", UserSettingsController, :edit

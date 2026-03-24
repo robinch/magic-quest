@@ -11,6 +11,7 @@ defmodule MagicQuest.Wishlists.WishlistCard do
 
     belongs_to :user, MagicQuest.Accounts.User
     has_many :listings, MagicQuest.Wishlists.Listing
+    has_many :deck_cards, MagicQuest.Decks.DeckCard
 
     timestamps(type: :utc_datetime_usec)
   end
