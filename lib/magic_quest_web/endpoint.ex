@@ -28,7 +28,7 @@ defmodule MagicQuestWeb.Endpoint do
     raise_on_missing_only: code_reloading?
 
   # Tidewave MCP server for AI-assisted development
-  if code_reloading? do
+  if Mix.env() == :dev do
     plug Tidewave
   end
 
