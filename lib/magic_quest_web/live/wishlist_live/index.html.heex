@@ -75,19 +75,7 @@
           No listings found yet
         </div>
 
-        <div class="card-actions justify-between mt-2">
-          <button
-            phx-click="toggle_expand"
-            phx-value-id={card.id}
-            class="btn btn-ghost btn-xs"
-            disabled={card.listings == []}
-          >
-            <span class={[
-              "h-4 w-4",
-              if(@expanded_card_id == card.id, do: "hero-chevron-up", else: "hero-chevron-down")
-            ]} />
-            {length(card.listings)} listing(s)
-          </button>
+        <div class="card-actions justify-end mt-2">
           <div class="flex gap-1">
             <button phx-click="search_now" phx-value-id={card.id} class="btn btn-ghost btn-xs">
               <span class="hero-magnifying-glass h-4 w-4" />
@@ -103,36 +91,31 @@
           </div>
         </div>
 
-        <%!-- Expanded Listings --%>
-        <div :if={@expanded_card_id == card.id && card.listings != []} class="mt-3">
+        <%!-- Listings --%>
+        <div :if={card.listings != []} class="mt-3">
           <div class="divider my-1"></div>
           <div class="overflow-x-auto">
-            <table class="table table-xs">
+            <table class="table table-xs w-full">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Set</th>
+                  <th>Cond.</th>
                   <th>Price</th>
                   <th>Stock</th>
-                  <th>Condition</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody>
-                <tr :for={listing <- card.listings} class={if listing.in_stock, do: "", else: "opacity-50"}>
-                  <td class="max-w-32 truncate">{listing.name}</td>
-                  <td>{listing.set_name}</td>
-                  <td :if={listing.price_kr}>{listing.price_kr} kr</td>
-                  <td :if={!listing.price_kr}>-</td>
+                <tr
+                  :for={listing <- card.listings}
+                  class={["cursor-pointer hover:bg-base-200", if(listing.in_stock, do: "", else: "opacity-50")]}
+                  onclick={"window.open('#{listing.url}', '_blank')"}
+                >
+                  <td class="text-xs">{condition_label(listing.condition)}</td>
+                  <td class="text-xs whitespace-nowrap">
+                    {if listing.price_kr, do: "#{listing.price_kr} kr", else: "-"}
+                  </td>
                   <td>
                     <span :if={listing.in_stock} class="badge badge-success badge-xs">{listing.stock}</span>
                     <span :if={!listing.in_stock} class="badge badge-ghost badge-xs">0</span>
-                  </td>
-                  <td>{condition_label(listing.condition)}</td>
-                  <td>
-                    <a href={listing.url} target="_blank" class="btn btn-ghost btn-xs">
-                      <span class="hero-arrow-top-right-on-square h-3 w-3" />
-                    </a>
                   </td>
                 </tr>
               </tbody>
