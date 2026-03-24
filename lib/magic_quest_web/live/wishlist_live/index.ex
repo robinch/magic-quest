@@ -29,7 +29,7 @@ defmodule MagicQuestWeb.WishlistLive.Index do
   def handle_event("search_cards", %{"value" => query}, socket) do
     suggestions =
       query
-      |> Cards.autocomplete(8)
+      |> Cards.autocomplete()
       |> Enum.map(& &1.name)
 
     {:noreply, assign(socket, suggestions: suggestions, search_query: query)}
