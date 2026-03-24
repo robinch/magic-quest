@@ -22,7 +22,10 @@ defmodule MagicQuest.Scryfall do
   defp client do
     opts = [
       base_url: @base_url,
-      headers: [{"user-agent", "MagicQuest/1.0 (personal wishlist tracker)"}]
+      headers: [
+        {"user-agent", "MagicQuest/1.0 (personal wishlist tracker)"},
+        {"accept", "application/json"}
+      ]
     ]
 
     opts =
