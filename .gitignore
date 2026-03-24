@@ -35,3 +35,8 @@ magic_quest-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# Environment and local config files.
+.env
+.env.*
+config/local.exs
+
